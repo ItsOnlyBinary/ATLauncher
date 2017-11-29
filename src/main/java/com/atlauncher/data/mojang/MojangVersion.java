@@ -17,15 +17,12 @@
  */
 package com.atlauncher.data.mojang;
 
-import com.atlauncher.annot.Json;
-
 import java.util.List;
 
-@Json
 public class MojangVersion {
+
     private String id;
     private String minecraftArguments;
-    private String type;
     private MojangAssetIndex assetIndex;
     private String assets;
     private MojangDownloads downloads;
@@ -41,10 +38,6 @@ public class MojangVersion {
         return this.minecraftArguments;
     }
 
-    public String getType() {
-        return this.type;
-    }
-
     public MojangAssetIndex getAssetIndex() {
         return this.assetIndex;
     }
@@ -53,7 +46,6 @@ public class MojangVersion {
         if (this.assets == null) {
             return "legacy";
         }
-
         return this.assets;
     }
 
@@ -72,4 +64,5 @@ public class MojangVersion {
     public String getMainClass() {
         return this.mainClass;
     }
+
 }

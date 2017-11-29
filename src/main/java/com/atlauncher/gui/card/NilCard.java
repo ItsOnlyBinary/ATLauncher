@@ -17,11 +17,10 @@
  */
 package com.atlauncher.gui.card;
 
-import com.atlauncher.App;
-import com.atlauncher.data.Language;
-import com.atlauncher.evnt.listener.RelocalizationListener;
-import com.atlauncher.evnt.manager.RelocalizationManager;
+import com.atlauncher.FileSystem;
+import com.atlauncher.data.OS;
 import com.atlauncher.gui.components.ImagePanel;
+import com.atlauncher.managers.LanguageManager;
 import com.atlauncher.utils.Utils;
 
 import javax.swing.BorderFactory;
@@ -32,29 +31,27 @@ import javax.swing.border.TitledBorder;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.Image;
-import java.io.File;
 
 /**
  * Class for displaying packs in the Pack Tab
  *
  * @author Ryan
  */
-public class NilCard extends JPanel implements RelocalizationListener {
-    private static final Image defaultImage = Utils.getIconImage(new File(App.settings.getImagesDir(), "defaultimage" +
-            ".png")).getImage();
+public class NilCard extends JPanel {
+    private static final Image defaultImage = Utils.getIconImage(FileSystem.IMAGES.resolve("defaultimage" + ".png")
+            .toFile()).getImage();
 
     private final JTextArea error = new JTextArea();
     private final JSplitPane splitter = new JSplitPane();
 
     public NilCard(String message) {
         super(new BorderLayout());
-        RelocalizationManager.addListener(this);
 
-        if (Utils.isMac()) {
-            this.setBorder(new TitledBorder(null, Language.INSTANCE.localize("common.nothingtoshow"), TitledBorder
+        if (OS.isMac()) {
+            this.setBorder(new TitledBorder(null, LanguageManager.localize("common.nothingtoshow"), TitledBorder
                     .DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, new Font("SansSerif", Font.BOLD, 14)));
         } else {
-            this.setBorder(new TitledBorder(null, Language.INSTANCE.localize("common.nothingtoshow"), TitledBorder
+            this.setBorder(new TitledBorder(null, LanguageManager.localize("common.nothingtoshow"), TitledBorder
                     .DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION, new Font("SansSerif", Font.BOLD, 15)));
         }
 
@@ -70,15 +67,5 @@ public class NilCard extends JPanel implements RelocalizationListener {
         this.splitter.setRightComponent(this.error);
 
         this.add(this.splitter, BorderLayout.CENTER);
-    }
-    
-    public void setMessage(String message) {
-        error.setText(message);
-    }
-
-    @Override
-    public void onRelocalization() {
-        TitledBorder border = (TitledBorder) this.getBorder();
-        border.setTitle(Language.INSTANCE.localize("common.nothingtoshow"));
     }
 }

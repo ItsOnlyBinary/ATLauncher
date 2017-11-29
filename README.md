@@ -1,16 +1,17 @@
 # ATLauncher
-
-[![Build Status](https://build.atlcdn.net/buildStatus/icon?job=ATLauncher)](https://build.atlcdn.net/job/ATLauncher/)
+[![Build Status](https://build.atlcdn.net/buildStatus/icon?job=ATLauncher 3.3.0.0)](https://build.atlcdn.net/job/ATLauncher%203.3.0.0/)
 
 ## What is it?
 ATLauncher is a Launcher for Minecraft which integrates multiple different ModPacks to allow you to download and install
 ModPacks easily and quickly.
 
 ## Links
-- [ATLauncher Website](https://www.atlauncher.com)
-- [ATLauncher Facebook](http://www.facebook.com/ATLauncher)
-- [ATLauncher Reddit](http://www.reddit.com/r/ATLauncher)
-- [ATLauncher Twitter](http://twitter.com/ATLauncher)
+- Facebook: https://www.facebook.com/ATLauncher
+- Forums: https://forums.atlauncher.com
+- IRC channel: #ATLauncher on EsperNet
+- Reddit: http://www.reddit.com/r/ATLauncher
+- Twitter: https://twitter.com/ATLauncher
+- Website: https://www.atlauncher.com
 
 ## Coding Standards & Styling Guidelines
 Please see the [STYLE.md](STYLE.md) file for coding standards and style guidelines.
@@ -37,20 +38,8 @@ Download and install [launch4j](http://sourceforge.net/projects/launch4j/files/l
 Make sure to add the directory containing launch4jc to your executable path which for me on 64bit Windows was:
 
 ```
-`C:\Program Files (x86)\Launch4j`
+C:\Program Files (x86)\Launch4j
 ```
-
-## Running the application
-If you wish to run the application in development, you can run the following:
-
-```
-mvn exec:java -Dexec.args='--working-dir=D:\\ATLauncher-Testing'
-```
-
-Making sure to change the directory to a working directory you wish to use.
-
-## Building artifacts
-To build artifacts for release, simply run `mvn install`.
 
 ## Plugging In Your Data
 To get started with the code and plug in your own data, you need to edit the

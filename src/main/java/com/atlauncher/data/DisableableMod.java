@@ -17,16 +17,18 @@
  */
 package com.atlauncher.data;
 
-import com.atlauncher.App;
-import com.atlauncher.LogManager;
-import com.atlauncher.utils.Utils;
+import com.atlauncher.FileSystem;
+import com.atlauncher.data.json.ModType;
+import com.atlauncher.managers.LogManager;
+import com.atlauncher.utils.FileUtils;
 
 import java.awt.Color;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
@@ -37,15 +39,14 @@ public class DisableableMod implements Serializable {
     private String version;
     private boolean optional;
     private String file;
-    private Type type;
+    private ModType type;
     private Color colour;
     private String description;
     private boolean disabled;
     private boolean userAdded = false; // Default to not being user added
-    private boolean wasSelected = true; // Default to it being selected on install
 
-    public DisableableMod(String name, String version, boolean optional, String file, Type type, Color colour, String
-            description, boolean disabled, boolean userAdded, boolean wasSelected) {
+    public DisableableMod(String name, String version, boolean optional, String file, ModType type, Color colour,
+                          String description, boolean disabled, boolean userAdded) {
         this.name = name;
         this.version = version;
         this.optional = optional;
@@ -55,12 +56,6 @@ public class DisableableMod implements Serializable {
         this.description = description;
         this.disabled = disabled;
         this.userAdded = userAdded;
-        this.wasSelected = wasSelected;
-    }
-
-    public DisableableMod(String name, String version, boolean optional, String file, Type type, Color colour, String
-            description, boolean disabled, boolean userAdded) {
-        this(name, version, optional, file, type, colour, description, disabled, userAdded, true);
     }
 
     public String getName() {
@@ -94,14 +89,6 @@ public class DisableableMod implements Serializable {
         return this.disabled;
     }
 
-    public boolean wasSelected() {
-        return this.wasSelected;
-    }
-
-    public void setWasSelected(boolean wasSelected) {
-        this.wasSelected = wasSelected;
-    }
-
     public boolean isUserAdded() {
         return this.userAdded;
     }
@@ -112,17 +99,19 @@ public class DisableableMod implements Serializable {
 
     public boolean enable(Instance instance) {
         if (this.disabled) {
-            if (!getFile(instance).getParentFile().exists()) {
-                getFile(instance).getParentFile().mkdir();
+            Path path = getFilePath(instance).getParent();
+            if (!Files.exists(path)) {
+                FileUtils.createDirectory(path);
             }
-            if (Utils.moveFile(getDisabledFile(instance), getFile(instance), true)) {
-                if (this.type == Type.jar) {
-                    File inputFile = instance.getMinecraftJar();
-                    File outputTmpFile = new File(App.settings.getTempDir(), instance.getSafeName() + "-minecraft.jar");
-                    if (Utils.hasMetaInf(inputFile)) {
+
+            if (FileUtils.moveFile(this.getDisabledFilePath(instance), this.getFilePath(instance), true)) {
+                if (this.type == ModType.JAR) {
+                    Path inputFile = instance.getMinecraftJar();
+                    Path outputTmpFile = FileSystem.TMP.resolve(instance.getSafeName() + "-minecraft.jar");
+                    if (FileUtils.hasMetaInf(inputFile)) {
                         try {
-                            JarInputStream input = new JarInputStream(new FileInputStream(inputFile));
-                            JarOutputStream output = new JarOutputStream(new FileOutputStream(outputTmpFile));
+                            JarInputStream input = new JarInputStream(new FileInputStream(inputFile.toFile()));
+                            JarOutputStream output = new JarOutputStream(new FileOutputStream(outputTmpFile.toFile()));
                             JarEntry entry;
 
                             while ((entry = input.getNextJarEntry()) != null) {
@@ -141,8 +130,8 @@ public class DisableableMod implements Serializable {
                             input.close();
                             output.close();
 
-                            inputFile.delete();
-                            outputTmpFile.renameTo(inputFile);
+                            FileUtils.delete(inputFile);
+                            FileUtils.moveFile(outputTmpFile, inputFile);
                         } catch (IOException e) {
                             LogManager.logStackTrace(e);
                         }
@@ -157,58 +146,62 @@ public class DisableableMod implements Serializable {
 
     public boolean disable(Instance instance) {
         if (!this.disabled) {
-            if (Utils.moveFile(getFile(instance), instance.getDisabledModsDirectory(), false)) {
+            if (FileUtils.moveFile(this.getFilePath(instance), instance.getDisabledModsDirectory(), false)) {
                 this.disabled = true;
                 return true;
             }
         }
+
         return false;
     }
 
-    public File getDisabledFile(Instance instance) {
-        return new File(instance.getDisabledModsDirectory(), this.file);
+    public Path getDisabledFilePath(Instance instance) {
+        return instance.getDisabledModsDirectory().resolve(this.file);
     }
 
-    public File getFile(Instance instance) {
-        File dir = null;
-        switch (type) {
-            case jar:
-            case forge:
-            case mcpc:
+    public Path getFilePath(Instance instance) {
+        Path dir = null;
+
+        switch (this.type) {
+            case JAR:
+            case FORGE:
+            case MCPC:
                 dir = instance.getJarModsDirectory();
                 break;
-            case texturepack:
+            case TEXTUREPACK:
                 dir = instance.getTexturePacksDirectory();
                 break;
-            case resourcepack:
+            case RESOURCEPACK:
                 dir = instance.getResourcePacksDirectory();
                 break;
-            case mods:
+            case MODS:
                 dir = instance.getModsDirectory();
                 break;
-            case ic2lib:
+            case IC2LIB:
                 dir = instance.getIC2LibDirectory();
                 break;
-            case denlib:
+            case DENLIB:
                 dir = instance.getDenLibDirectory();
                 break;
-            case coremods:
+            case COREMODS:
                 dir = instance.getCoreModsDirectory();
                 break;
-            case shaderpack:
+            case SHADERPACK:
                 dir = instance.getShaderPacksDirectory();
                 break;
             default:
                 LogManager.warn("Unsupported mod for enabling/disabling " + this.name);
                 break;
         }
+
         if (dir == null) {
             return null;
         }
-        return new File(dir, file);
+
+        return dir.resolve(file);
     }
 
-    public Type getType() {
+    public ModType getType() {
         return this.type;
     }
 

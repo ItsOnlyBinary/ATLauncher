@@ -17,14 +17,15 @@
  */
 package com.atlauncher.mclauncher;
 
-import com.atlauncher.App;
-import com.atlauncher.LogManager;
+import com.atlauncher.FileSystem;
 import com.atlauncher.Update;
 import com.atlauncher.data.Account;
 import com.atlauncher.data.Constants;
 import com.atlauncher.data.Instance;
 import com.atlauncher.data.LoginResponse;
-import com.atlauncher.utils.Utils;
+import com.atlauncher.data.OS;
+import com.atlauncher.managers.LogManager;
+import com.atlauncher.managers.SettingsManager;
 
 import java.applet.Applet;
 import java.awt.Dimension;
@@ -38,6 +39,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -52,7 +55,7 @@ public class LegacyMCLauncher {
         String lwjgl = "lwjgl.jar";
         String lwjgl_util = "lwjgl_util.jar";
         String jinput = "jinput.jar";
-        File[] files = instance.getBinDirectory().listFiles();
+        File[] files = instance.getBinDirectory().toFile().listFiles();
         for (File file : files) {
             if (file.getName().startsWith("lwjgl-")) {
                 lwjgl = file.getName();
@@ -64,11 +67,13 @@ public class LegacyMCLauncher {
         }
         String[] jarFiles = new String[]{"minecraft.jar", lwjgl, lwjgl_util, jinput};
         StringBuilder cpb = new StringBuilder("");
-        File jarMods = instance.getJarModsDirectory();
-        if (jarMods.exists() && (instance.hasJarMods() || jarMods.listFiles().length != 0)) {
+
+        Path jarMods = instance.getJarModsDirectory();
+
+        if (Files.exists(jarMods) && (instance.hasJarMods() || jarMods.toFile().listFiles().length != 0)) {
             if (instance.hasJarMods()) {
                 ArrayList<String> jarmods = new ArrayList<String>(Arrays.asList(instance.getJarOrder().split(",")));
-                for (File file : jarMods.listFiles()) {
+                for (File file : jarMods.toFile().listFiles()) {
                     if (jarmods.contains(file.getName())) {
                         continue;
                     }
@@ -76,14 +81,14 @@ public class LegacyMCLauncher {
                     cpb.append(file);
                 }
                 for (String mod : jarmods) {
-                    File thisFile = new File(jarMods, mod);
-                    if (thisFile.exists()) {
+                    Path thisFile = jarMods.resolve(mod);
+                    if (Files.exists(thisFile)) {
                         cpb.append(File.pathSeparator);
                         cpb.append(thisFile);
                     }
                 }
             } else {
-                for (File file : jarMods.listFiles()) {
+                for (File file : jarMods.toFile().listFiles()) {
                     cpb.append(File.pathSeparator);
                     cpb.append(file);
                 }
@@ -92,63 +97,62 @@ public class LegacyMCLauncher {
 
         for (String jarFile : jarFiles) {
             cpb.append(File.pathSeparator);
-            cpb.append(new File(instance.getBinDirectory(), jarFile));
+            cpb.append(instance.getBinDirectory().resolve(jarFile));
         }
 
-        List<String> arguments = new ArrayList<String>();
+        List<String> arguments = new ArrayList<>();
 
-        String path = App.settings.getJavaPath() + File.separator + "bin" + File.separator + "java";
-        if (Utils.isWindows()) {
+        String path = SettingsManager.getJavaPath() + File.separator + "bin" + File.separator + "java";
+        if (OS.isWindows()) {
             path += "w";
         }
         arguments.add(path);
 
-        if (Utils.isWindows()) {
+        if (OS.isWindows()) {
             arguments.add("-XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump");
         }
 
         arguments.add("-XX:-OmitStackTraceInFastThrow");
 
-        String javaParams = App.settings.getJavaParameters();
+        String javaParams = SettingsManager.getJavaParameters();
 
         if (javaParams.isEmpty()) {
             // Mojang launcher defaults if user has no custom java arguments
             javaParams = "-XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode -XX:-UseAdaptiveSizePolicy";
         }
 
-        arguments.add("-Xms" + App.settings.getInitialMemory() + "M");
+        arguments.add("-Xms" + SettingsManager.getInitialMemory() + "M");
 
-        if (App.settings.getMaximumMemory() < instance.getMemory()) {
-            if ((Utils.getMaximumRam() / 2) < instance.getMemory()) {
-                arguments.add("-Xmx" + App.settings.getMaximumMemory() + "M");
+        if (SettingsManager.getMaximumMemory() < instance.getMemory()) {
+            if ((OS.getMaximumRam() / 2) < instance.getMemory()) {
+                arguments.add("-Xmx" + SettingsManager.getMaximumMemory() + "M");
             } else {
                 arguments.add("-Xmx" + instance.getMemory() + "M");
             }
         } else {
-            arguments.add("-Xmx" + App.settings.getMaximumMemory() + "M");
+            arguments.add("-Xmx" + SettingsManager.getMaximumMemory() + "M");
         }
-        if (App.settings.getPermGen() < instance.getPermGen() && (Utils.getMaximumRam() / 8) < instance.getPermGen()) {
-            if (Utils.useMetaspace()) {
+        if (SettingsManager.getPermGen() < instance.getPermGen() && (OS.getMaximumRam() / 8) < instance.getPermGen()) {
+            if (OS.useMetaspace()) {
                 arguments.add("-XX:MetaspaceSize=" + instance.getPermGen() + "M");
             } else {
                 arguments.add("-XX:PermSize=" + instance.getPermGen() + "M");
             }
         } else {
-            if (Utils.useMetaspace()) {
-                arguments.add("-XX:MetaspaceSize=" + App.settings.getPermGen() + "M");
+            if (OS.useMetaspace()) {
+                arguments.add("-XX:MetaspaceSize=" + SettingsManager.getPermGen() + "M");
             } else {
-                arguments.add("-XX:PermSize=" + App.settings.getPermGen() + "M");
+                arguments.add("-XX:PermSize=" + SettingsManager.getPermGen() + "M");
             }
         }
 
         arguments.add("-Duser.language=en");
         arguments.add("-Duser.country=US");
-        arguments.add("-Dfml.log.level=" + App.settings.getForgeLoggingLevel());
+        arguments.add("-Dfml.log.level=" + SettingsManager.getForgeLoggingLevel());
 
-        if (Utils.isMac()) {
+        if (OS.isMac()) {
             arguments.add("-Dapple.laf.useScreenMenuBar=true");
-            arguments.add("-Xdock:icon=" + new File(App.settings.getImagesDir(), "OldMinecraftIcon.png")
-                    .getAbsolutePath());
+            arguments.add("-Xdock:icon=" + FileSystem.IMAGES.resolve("OldMinecraftIcon.png"));
             arguments.add("-Xdock:name=\"" + instance.getName() + "\"");
         }
 
@@ -163,7 +167,7 @@ public class LegacyMCLauncher {
                             continue;
                         }
 
-                        if (arg.startsWith("-XX:+")) {
+                        if (arg.substring(0, 5).equalsIgnoreCase("-XX:+")) {
                             if (instance.getExtraArguments().contains("-XX:-" + arg.substring(5))) {
                                 negatedArgs.add("-XX:-" + arg.substring(5));
                                 LogManager.error("Argument " + arg + " is negated by pack developer and not added!");
@@ -201,13 +205,13 @@ public class LegacyMCLauncher {
         arguments.add(LegacyMCLauncher.class.getCanonicalName());
 
         // Start or passed in arguments
-        arguments.add(instance.getRootDirectory().getAbsolutePath()); // Path
+        arguments.add(instance.getRootDirectory().toString()); // Path
         arguments.add(account.getMinecraftUsername()); // Username
         arguments.add(sess.getAuth().getAuthenticatedToken()); // Session
         arguments.add(instance.getName()); // Instance Name
-        arguments.add(App.settings.getWindowWidth() + ""); // Window Width
-        arguments.add(App.settings.getWindowHeight() + ""); // Window Height
-        if (App.settings.startMinecraftMaximised()) {
+        arguments.add(SettingsManager.getWindowWidth() + ""); // Window Width
+        arguments.add(SettingsManager.getWindowHeight() + ""); // Window Height
+        if (SettingsManager.startMinecraftMaximised()) {
             arguments.add("true"); // Maximised
         } else {
             arguments.add("false"); // Not Maximised
@@ -231,9 +235,7 @@ public class LegacyMCLauncher {
         String argsString = arguments.toString();
 
         if (!LogManager.showDebug) {
-            if (App.settings != null) {
-                argsString = argsString.replace(App.settings.getBaseDir().getAbsolutePath(), "USERSDIR");
-            }
+            argsString = argsString.replace(FileSystem.BASE_DIR.toAbsolutePath().toString(), "USERSDIR");
 
             argsString = argsString.replace(account.getMinecraftUsername(), "REDACTED");
             argsString = argsString.replace(sess.getAuth().getAuthenticatedToken(), "REDACTED");
@@ -242,7 +244,7 @@ public class LegacyMCLauncher {
         LogManager.info("Launching Minecraft with the following arguments " + "(user related stuff has been removed):" +
                 " " + argsString);
         ProcessBuilder processBuilder = new ProcessBuilder(arguments);
-        processBuilder.directory(instance.getRootDirectory());
+        processBuilder.directory(instance.getRootDirectory().toFile());
         processBuilder.redirectErrorStream(true);
         processBuilder.environment().remove("_JAVA_OPTIONS"); // Remove any _JAVA_OPTIONS, they are a PAIN
         return processBuilder.start();
@@ -407,6 +409,12 @@ public class LegacyMCLauncher {
                 } catch (InstantiationException e) {
                     System.out.println("Applet wrapper failed! Falling back " + "to compatibility mode.");
                     mc.getMethod("main", String[].class).invoke(null, (Object) mcArgs);
+                } finally {
+                    try {
+                        cl.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         } catch (ClassNotFoundException e) {

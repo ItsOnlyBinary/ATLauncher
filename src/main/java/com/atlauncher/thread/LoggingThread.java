@@ -18,18 +18,19 @@
 
 package com.atlauncher.thread;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.concurrent.BlockingQueue;
-
-import com.atlauncher.App;
+import com.atlauncher.FileSystem;
 import com.atlauncher.data.Constants;
 import com.atlauncher.evnt.LogEvent;
 import com.atlauncher.utils.Timestamper;
 import com.atlauncher.writer.LogEventWriter;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.concurrent.BlockingQueue;
 
 public final class LoggingThread extends Thread {
     private final LogEventWriter writer;
@@ -40,14 +41,18 @@ public final class LoggingThread extends Thread {
     public LoggingThread(BlockingQueue<LogEvent> queue) {
         this.queue = queue;
         this.setName("ATL-Logging-Thread");
-        File log = new File(App.settings.getLogsDir(), filename);
-        try {
-            log.createNewFile();
-        } catch (IOException e) {
-            e.printStackTrace();
+        Path log = FileSystem.LOGS.resolve(filename);
+
+        if (!Files.exists(log)) {
+            try {
+                Files.createFile(log);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+
         try {
-            this.writer = new LogEventWriter(new FileWriter(log));
+            this.writer = new LogEventWriter(new FileWriter(log.toFile()));
             this.writer.write("Generated on " + Timestamper.now() + "\n");
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
@@ -66,17 +71,15 @@ public final class LoggingThread extends Thread {
 
     @Override
     public void run() {
-        while (true) {
-            LogEvent next;
-            try {
-                next = this.queue.take();
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-                return;
+        try {
+            while (true) {
+                LogEvent next = this.queue.take();
+                if (next != null) {
+                    next.post(this.writer);
+                }
             }
-            if (next != null) {
-                next.post(this.writer);
-            }
+        } catch (Exception ex) {
+            ex.printStackTrace(System.err);
         }
     }
 

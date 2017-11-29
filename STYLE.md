@@ -14,10 +14,10 @@ request if it doesn't follow these coding standards, we most likely will delay m
 - Please mark all classes that are to be de/serialized with Gson with the @Json annotation for other developers.
 - Please update the CHANGELOG.md file when fixing/adding something so it's easier to keep track of than git commits.
 Feel free to add in a 'by MyUsername' to the end of the changes you've made.
-- Please don't do large commits. My preference is a single commit for a single fix/addition rather than bundled up
++ Please don't do large commits. My preference is a single commit for a single fix/addition rather than bundled up
 commits.
-- Please use final where possible.
-- Please make sure all files contain the GNU GPLv3 license at the top of the file.
++ Please use final where possible.
++ Please make sure all files contain the GNU GPLv3 license at the top of the file.
 
 ## Styling guidelines
 Styling guidelines are just how we prefer to have things styled, mainly relating to doc blocks and comments. Not

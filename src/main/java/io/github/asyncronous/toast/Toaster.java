@@ -1,20 +1,17 @@
 package io.github.asyncronous.toast;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.GraphicsEnvironment;
-import java.awt.Image;
-import java.io.IOException;
-import java.io.InputStream;
+import com.atlauncher.data.OS;
+import io.github.asyncronous.toast.ui.ToastWindow;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.UIManager;
-
-import com.atlauncher.LogManager;
-
-import io.github.asyncronous.toast.ui.ToastWindow;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.GraphicsEnvironment;
+import java.awt.Image;
+import java.io.InputStream;
 
 /**
  * Static class to allow easier use of toaster notifications
@@ -56,7 +53,11 @@ public final class Toaster {
         UIManager.put(ToasterConstants.TIME, 5000);
         UIManager.put(ToasterConstants.OPAQUE, false);
         UIManager.put(ToasterConstants.OPACITY, 0.5F);
-        UIManager.put("Toaster.contBounds", GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds());
+        
+        if (!OS.isHeadless()) {
+            UIManager.put("Toaster.contBounds", GraphicsEnvironment.getLocalGraphicsEnvironment()
+                    .getMaximumWindowBounds());
+        }
     }
 
     /**
@@ -117,8 +118,7 @@ public final class Toaster {
      * @param msg The text of the message you want to display
      * @param ico The icon you would like to display
      * @example ImageIcon image = new ImageIcon(ImageIO.read(getClass().getResourceAsStream
-     * ("/assets/toaster/icons/error.png"
-     * ))); Toaster.pop("This is an error", image);
+     * ("/assets/toaster/icons/error.png" ))); Toaster.pop("This is an error", image);
      */
     public void pop(String msg, Icon ico) {
         ToastWindow window = new ToastWindow();
@@ -128,16 +128,16 @@ public final class Toaster {
     }
 
     private Image createImage(String name) {
-        InputStream stream = Toaster.class.getResourceAsStream("/assets/toast/icons/" + name + ".png");
-
-        if (stream == null) {
-            throw new NullPointerException("Stream == null");
-        }
-
         try {
+            InputStream stream = Toaster.class.getResourceAsStream("/assets/toast/icons/" + name + ".png");
+
+            if (stream == null) {
+                throw new NullPointerException("Stream == null");
+            }
+
             return ImageIO.read(stream);
-        } catch (IOException ex) {
-            LogManager.logStackTrace("Failed to load Toaster image", ex);
+        } catch (Exception ex) {
+            ex.printStackTrace(System.err);
             return null;
         }
     }

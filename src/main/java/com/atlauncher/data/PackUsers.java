@@ -17,10 +17,10 @@
  */
 package com.atlauncher.data;
 
-import com.atlauncher.App;
-import com.atlauncher.LogManager;
 import com.atlauncher.annot.Json;
 import com.atlauncher.exceptions.InvalidPack;
+import com.atlauncher.managers.LogManager;
+import com.atlauncher.managers.PackManager;
 
 import java.util.List;
 
@@ -33,7 +33,7 @@ public class PackUsers {
     public void addUsers() {
         Pack pack = null;
         try {
-            pack = App.settings.getPackByID(this.pack);
+            pack = PackManager.getPackByID(this.pack);
         } catch (InvalidPack e) {
             LogManager.logStackTrace(e);
             return;

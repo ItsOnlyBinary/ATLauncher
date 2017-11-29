@@ -17,11 +17,9 @@
  */
 package com.atlauncher.utils;
 
-import com.atlauncher.App;
-import com.atlauncher.LogManager;
 import com.atlauncher.data.Account;
 import com.atlauncher.data.LoginResponse;
-
+import com.atlauncher.managers.SettingsManager;
 import com.mojang.authlib.Agent;
 import com.mojang.authlib.exceptions.AuthenticationException;
 import com.mojang.authlib.exceptions.AuthenticationUnavailableException;
@@ -34,8 +32,8 @@ public class Authentication {
     }
 
     public static LoginResponse checkAccount(String username, String password, String clientToken) {
-        YggdrasilUserAuthentication auth = (YggdrasilUserAuthentication) new YggdrasilAuthenticationService(App
-                .settings.getProxyForAuth(), clientToken).createUserAuthentication(Agent.MINECRAFT);
+        YggdrasilUserAuthentication auth = (YggdrasilUserAuthentication) new YggdrasilAuthenticationService
+                (SettingsManager.getProxy(), clientToken).createUserAuthentication(Agent.MINECRAFT);
 
         LoginResponse response = new LoginResponse(username);
 
@@ -48,7 +46,7 @@ public class Authentication {
                 response.setAuth(auth);
             } catch (AuthenticationException e) {
                 response.setErrorMessage(e.getMessage());
-                LogManager.logStackTrace("Authentication failed", e);
+                e.printStackTrace();
             }
         }
 
@@ -60,8 +58,8 @@ public class Authentication {
     }
 
     public static LoginResponse login(Account account, boolean logout) {
-        YggdrasilUserAuthentication auth = (YggdrasilUserAuthentication) new YggdrasilAuthenticationService(App
-                .settings.getProxyForAuth(), "1").createUserAuthentication(Agent.MINECRAFT);
+        YggdrasilUserAuthentication auth = (YggdrasilUserAuthentication) new YggdrasilAuthenticationService
+                (SettingsManager.getProxy(), "1").createUserAuthentication(Agent.MINECRAFT);
         LoginResponse response = new LoginResponse(account.getUsername());
 
         if (account.hasStore()) {
@@ -83,10 +81,10 @@ public class Authentication {
             } catch (AuthenticationUnavailableException e) {
                 response.setErrorMessage(e.getMessage());
                 response.setOffline();
-                LogManager.logStackTrace("Authentication servers unavailable", e);
+                e.printStackTrace();
             } catch (AuthenticationException e) {
                 response.setErrorMessage(e.getMessage());
-                LogManager.logStackTrace("Authentication failed", e);
+                e.printStackTrace();
             }
         }
 

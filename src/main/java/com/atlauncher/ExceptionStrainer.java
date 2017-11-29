@@ -18,9 +18,19 @@
 
 package com.atlauncher;
 
+import com.atlauncher.managers.LogManager;
+
+import java.io.CharArrayWriter;
+import java.io.PrintWriter;
+
 public final class ExceptionStrainer implements Thread.UncaughtExceptionHandler {
     @Override
     public void uncaughtException(Thread t, Throwable e) {
-        LogManager.logStackTrace(e);
+        e.printStackTrace();
+
+        try (CharArrayWriter writer = new CharArrayWriter()) {
+            e.printStackTrace(new PrintWriter(writer));
+            LogManager.error(writer.toString());
+        }
     }
 }

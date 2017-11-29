@@ -17,13 +17,13 @@
  */
 package com.atlauncher.gui.tabs;
 
-import com.atlauncher.App;
+import com.atlauncher.annot.Subscribe;
 import com.atlauncher.data.Instance;
-import com.atlauncher.data.Language;
-import com.atlauncher.evnt.listener.RelocalizationListener;
-import com.atlauncher.evnt.manager.RelocalizationManager;
+import com.atlauncher.evnt.EventHandler;
 import com.atlauncher.gui.card.InstanceCard;
 import com.atlauncher.gui.card.NilCard;
+import com.atlauncher.managers.InstanceManager;
+import com.atlauncher.managers.LanguageManager;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 /**
  * TODO: Rewrite this for better loading
  */
-public class InstancesTab extends JPanel implements Tab, RelocalizationListener {
+public class InstancesTab extends JPanel implements Tab {
     private static final long serialVersionUID = -969812552965390610L;
     private JPanel topPanel;
     private JButton clearButton;
@@ -60,20 +60,18 @@ public class InstancesTab extends JPanel implements Tab, RelocalizationListener 
     private JPanel panel;
     private JScrollPane scrollPane;
     private int currentPosition = 0;
-    
-    private NilCard nilCard;
 
     public InstancesTab() {
         setLayout(new BorderLayout());
+        EventHandler.EVENT_BUS.subscribe(this);
         loadContent(false);
-        RelocalizationManager.addListener(this);
     }
 
     public void loadContent(boolean keepFilters) {
         topPanel = new JPanel();
         topPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 
-        clearButton = new JButton(Language.INSTANCE.localize("common.clear"));
+        clearButton = new JButton(LanguageManager.localize("common.clear"));
         clearButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 searchBox.setText("");
@@ -96,7 +94,7 @@ public class InstancesTab extends JPanel implements Tab, RelocalizationListener 
         });
         topPanel.add(searchBox);
 
-        searchButton = new JButton(Language.INSTANCE.localize("common.search"));
+        searchButton = new JButton(LanguageManager.localize("common.search"));
         searchButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 reload();
@@ -113,7 +111,7 @@ public class InstancesTab extends JPanel implements Tab, RelocalizationListener 
         });
         topPanel.add(hasUpdate);
 
-        hasUpdateLabel = new JLabel(Language.INSTANCE.localize("instance.hasupdate"));
+        hasUpdateLabel = new JLabel(LanguageManager.localize("instance.hasupdate"));
         topPanel.add(hasUpdateLabel);
 
         add(topPanel, BorderLayout.NORTH);
@@ -131,7 +129,7 @@ public class InstancesTab extends JPanel implements Tab, RelocalizationListener 
         gbc.fill = GridBagConstraints.BOTH;
 
         int count = 0;
-        for (Instance instance : App.settings.getInstancesSorted()) {
+        for (Instance instance : InstanceManager.getInstancesSorted()) {
             if (instance.canPlay()) {
                 if (keepFilters) {
                     boolean showInstance = true;
@@ -162,8 +160,7 @@ public class InstancesTab extends JPanel implements Tab, RelocalizationListener 
             }
         }
         if (count == 0) {
-            nilCard = new NilCard(Language.INSTANCE.localizeWithReplace("instance.nodisplay", "\n\n"));
-            panel.add(nilCard, gbc);
+            panel.add(new NilCard(LanguageManager.localizeWithReplace("instance.nodisplay", "\n\n")), gbc);
         }
 
         SwingUtilities.invokeLater(new Runnable() {
@@ -189,17 +186,11 @@ public class InstancesTab extends JPanel implements Tab, RelocalizationListener 
 
     @Override
     public String getTitle() {
-        return Language.INSTANCE.localize("tabs.instances");
+        return LanguageManager.localize("tabs.instances");
     }
 
-    @Override
-    public void onRelocalization() {
-        clearButton.setText(Language.INSTANCE.localize("common.clear"));
-        searchButton.setText(Language.INSTANCE.localize("common.search"));
-        hasUpdateLabel.setText(Language.INSTANCE.localize("instance.hasupdate"));
-        
-        if (nilCard != null) {
-            nilCard.setMessage(Language.INSTANCE.localizeWithReplace("instance.nodisplay", "\n\n"));
-        }
+    @Subscribe
+    private void onInstancesChanged(EventHandler.InstancesChangeEvent e) {
+        this.reload();
     }
 }
